@@ -649,6 +649,19 @@ body { background: var(--bg); background-image: none; font-size: 15px; }
   .mgcard .b { margin-left: 0 !important; flex: 1 1 100%; }
   .playbar { padding: 12px; }
 }
+/* плашка энергии в шапке — только на телефоне, шапка закреплена и учитывает вырезы экрана */
+.etop { display: none; }
+@media (max-width: 760px) {
+  .etop { display: flex; align-items: center; gap: 5px; background: #5fe3d214; border: 1px solid #5fe3d240; border-radius: 10px; padding: 3px 8px 3px 5px; min-width: 0; line-height: 1.1; }
+  .etop span { font-size: 15px; }
+  .etop div { display: flex; flex-direction: column; gap: 2px; min-width: 62px; }
+  .etop b { font-size: 12px; color: var(--hi); font-weight: 500; }
+  .etop i { display: block; height: 3px; border-radius: 2px; background: #00000066; overflow: hidden; }
+  .etop u { display: block; height: 100%; background: var(--energy); }
+  .etop small { font-size: 8.5px; color: var(--muted); white-space: nowrap; }
+  .brand { font-size: 0 !important; gap: 0 !important; }
+}
+.chl em { white-space: nowrap; }
 /* вкладка «Кликер»: кольцо энергии вокруг кнопки, мягкая подсветка, аккуратные карточки */
 .farm { overflow-x: hidden; }
 .farm::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 360px; background: radial-gradient(circle at 50% 170px, var(--pc, #7db4ff), transparent 62%); opacity: .13; pointer-events: none; }
@@ -846,6 +859,7 @@ body { background: var(--bg); background-image: none; font-size: 15px; }
       <button data-p="fx">Мастерская</button>
       <button data-p="profile" id="navNick">Профиль</button>
     </nav>
+    <div class="etop" id="etop" title="Энергия"><span>⚡</span><div><b class="num" id="etopV">100/100</b><i><u id="etopB"></u></i><small class="num" id="etopT"></small></div></div>
     <div class="acct">
       <div class="wal"><small>Кошелёк</small><b id="tokens">0</b></div>
       <button class="me" data-p="profile" id="meBtn" aria-label="Открыть профиль"><span class="av" id="meAv" style="width:32px;height:32px;font-size:15px">И</span><span class="nk" id="meNick">Игрок</span><span class="lvlc" id="meLvl">1</span></button>
@@ -1071,7 +1085,7 @@ body { background: var(--bg); background-image: none; font-size: 15px; }
   <div class="sheet" style="width:min(820px,100%)">
     <div class="mghead"><div class="cap" id="mgcap"></div><div><h3 id="mgtitle">Мини-игра</h3><p id="mgdesc"></p></div></div>
     <div class="mgwrap"><div class="mga" id="mga"></div></div>
-    <div class="mbtns"><button class="b b-ghost" id="mgclose">Выйти</button></div>
+    <div class="mbtns"><button class="b b-ghost" id="mgpause" hidden>Пауза</button><button class="b b-ghost" id="mgclose">Выйти</button></div>
   </div>
 </div>
 
@@ -2095,6 +2109,14 @@ if (/tgWebApp/.test(location.hash) || (function () { try { return !!sessionStora
   }
   var caseRefs = [];
   function oddsBar(c) { return c.odds.map(function (o, r) { return o ? '<i style="flex:' + o + ";background:" + R[r].c + '"></i>' : ""; }).join(""); }
+  /* кнопка «Шансы»: точные проценты по редкостям и шанс одной конкретной игры этой редкости */
+  function chanceHtml(c) {
+    return '<details class="inside"><summary>Шансы</summary><ul class="chl">' + c.odds.map(function (o, r) {
+      if (!o) return "";
+      var n = c.items.filter(function (it) { return it[1] === r; }).length;
+      return '<li style="--rc:' + R[r].c + '"><i></i><span>' + R[r].n + " · игр: " + n + "</span><em>" + String(o).replace(".", ",") + "%" + (n ? " · одна игра " + (o / n).toFixed(2).replace(".", ",") + "%" : "") + "</em></li>";
+    }).join("") + "</ul></details>";
+  }
   function oddsTxt(c) { return c.odds.map(function (o, r) { return o ? '<span style="color:' + R[r].c + '">' + R[r].n + " " + String(o).replace(".", ",") + "%</span>" : ""; }).join(""); }
   function tint(c) { return '<div class="tint" style="background:radial-gradient(circle at 50% 58%, hsla(' + c.h + ',70%,45%,.55), rgba(0,0,0,.82) 72%)"></div>'; }
   /* игры кейса, у которых есть скины */
@@ -2104,7 +2126,7 @@ if (/tgWebApp/.test(location.hash) || (function () { try { return !!sessionStora
     $("feature").innerHTML = '<div class="mosaic">' + topIds(mc, 4).map(function (id) { return cover(GAMES[id], true); }).join("") + tint(mc) + '<div class="crate">' + crate(mc) + "</div></div>" +
       '<div class="fbody"><h3>Мифический кейс</h3><p>Только эпические, легендарные и мифические игры. Шанс ' + mc.odds[5] + "% выбить одну из " + nm + " мифических легенд.</p>" +
       '<div class="tagrow">' + mc.items.filter(function (it) { return it[1] >= 4; }).map(function (it) { return '<span class="tag" style="' + (it[1] === 5 ? "color:#ff9fbf" : "") + '">' + esc(it[0]) + "</span>"; }).join("") + "</div>" +
-      '<div class="oddsbar">' + oddsBar(mc) + '</div><div class="cmeta"><span class="got"></span><span class="infl"></span></div><div class="slot"></div></div>';
+      '<div class="oddsbar">' + oddsBar(mc) + '</div><div class="cmeta"><span class="got"></span><span class="infl"></span></div>' + chanceHtml(mc) + '<div class="slot"></div></div>';
     CASES.forEach(function (c, ci) {
       var host;
       if (ci === mi) host = $("feature");
@@ -2115,7 +2137,7 @@ if (/tgWebApp/.test(location.hash) || (function () { try { return !!sessionStora
           '<div class="cbody"><div class="cname">Кейс «' + esc(c.n) + '»</div><div class="cmeta"><span class="got"></span><span class="infl"></span></div>' +
           '<div class="oddsbar" title="Шансы по редкости">' + oddsBar(c) + "</div>" +
           (caseSkinGames(c).length ? '<div class="sgn"></div>' : "") +
-          '<details class="inside"><summary>Что внутри</summary><ul></ul><div class="odds">' + oddsTxt(c) + '</div></details><div class="slot"></div></div>';
+          '<details class="inside"><summary>Что внутри</summary><ul></ul></details>' + chanceHtml(c) + '<div class="slot"></div></div>';
         $("cases").appendChild(host);
       }
       caseRefs.push({ host: host, slot: host.querySelector(".slot"), got: host.querySelector(".got"), infl: host.querySelector(".infl"), ul: host.querySelector("ul"), sgn: host.querySelector(".sgn"), key: "" });
@@ -3959,6 +3981,455 @@ if (/tgWebApp/.test(location.hash) || (function () { try { return !!sessionStora
       label: function () { return "Штифтов вскрыто: " + opened; }
     };
   };
+  /* ================= РЕЕСТР МИНИ-ИГР ПО ЖАНРАМ =================
+     Цель — 175 игр: 7 жанров × 25 слотов. Жанр = кейс игры, слот = её место в кейсе.
+     Игра библиотеки получает мини-игру своего слота; пока слот не написан, остаётся старая механика.
+     Каждая игра — фабрика (st, C) → { dur, down, move, up, swipe, key, update, draw, factor, label }.
+     Рисуем в логическом поле 720×360; масштаб, поворот на телефоне, паузу, счёт и награду даёт общий хост startMini. */
+  var MGN = ["Шутер", "Выживание", "Экшен", "Инди", "Хоррор", "RPG", "Стратегия"], MGI = ["star", "fire", "play", "gem", "user", "crown", "collect"], MG = {}, MGL = [];
+  function reg(gi, slot, title, goal, how, fn) {
+    var id = "mg" + gi + "_" + slot;
+    ENG[id] = fn; ENG_INFO[id] = { n: MGN[gi], i: MGI[gi], d: how };
+    MG[gi + ":" + slot] = { id: id, gi: gi, slot: slot, t: title, goal: goal }; MGL.push(MG[gi + ":" + slot]);
+  }
+  function btn(x, bx, by, w, h, label, col, on) { x.globalAlpha = on === false ? .4 : 1; x.fillStyle = col; rrect(x, bx, by, w, h, 9); x.fill(); x.globalAlpha = 1; text(x, label, bx + w / 2, by + h / 2 + 6, 16, "#fff"); }
+  function inR(x, y, bx, by, w, h) { return x >= bx && x <= bx + w && y >= by && y <= by + h; }
+
+  /* ---- Шутеры ---- */
+  reg(0, 1, "Ярмарочный тир", "Сбивай мишени на полках; утки дают тройные очки", "Нажимай на мишени, пока они не уехали с полки. Утка даёт втрое больше. Промах сбрасывает серию.", function (st, C) {
+    var T = [], sp = 0, hits = 0, Y = [112, 192, 272];
+    return {
+      dur: 30,
+      down: function (x, y) {
+        tone(170, .06, .05, "square");
+        for (var i = T.length - 1; i >= 0; i--) { var t = T[i]; if (Math.abs(t.x - x) < 28 && Math.abs(Y[t.r] - 24 - y) < 30) { T.splice(i, 1); hits++; st.combo++; st.add((t.d ? 3 : 1) * (1 + Math.floor(st.combo / 6)), x, y - 18, t.d ? "#ffc83d" : "#fff"); st.burst(x, y, "#ff9f2e", 8); return; } }
+        st.combo = 0;
+      },
+      update: function (dt) {
+        sp -= dt;
+        if (sp <= 0) { sp = rnd(.35, .7) / C.diff; var r = Math.floor(Math.random() * 3), dir = r % 2 ? -1 : 1; T.push({ r: r, x: dir > 0 ? -30 : MW + 30, v: dir * rnd(110, 190) * C.diff, d: Math.random() < .18 }); }
+        T = T.filter(function (t) { t.x += t.v * dt; return t.x > -40 && t.x < MW + 40; });
+      },
+      draw: function (x) {
+        Y.forEach(function (y) { x.fillStyle = "#6b4a2a"; x.fillRect(0, y, MW, 10); x.fillStyle = "rgba(0,0,0,.35)"; x.fillRect(0, y + 10, MW, 6); });
+        T.forEach(function (t) { emo(x, t.d ? "🦆" : "🎯", t.x, Y[t.r] - 24, 42); });
+      },
+      factor: function () { return st.score / 45; },
+      label: function () { return hits + " попаданий"; }
+    };
+  });
+  reg(0, 2, "Снайперская пауза", "Прицел качается: задержи дыхание и выстрели точно в цель", "Удерживай палец или кнопку мыши — прицел замедляется, пока хватает дыхания. Отпусти, чтобы выстрелить. Чем ближе к центру, тем больше очков.", function (st, C) {
+    var tg, breath = 1, was = false, ax = 360, ay = 180, hits = 0, shots = 0, ph = Math.random() * 6;
+    function nt() { tg = { x: rnd(150, 570), y: rnd(100, 270) }; }
+    nt();
+    return {
+      dur: 35,
+      update: function (dt) {
+        var hold = st.down && breath > 0;
+        ph += dt * (hold ? .3 : 2.1) * C.diff;
+        breath = clamp(breath + (st.down ? -dt / 2.4 : dt / 1.5), 0, 1);
+        ax = tg.x + Math.sin(ph * 1.3) * 95 + Math.sin(ph * 2.9) * 30; ay = tg.y + Math.cos(ph * 1.7) * 62;
+        if (!st.down && was) {
+          shots++; tone(120, .12, .07, "square"); st.shake = .08;
+          var d = Math.hypot(ax - tg.x, ay - tg.y);
+          if (d < 34) { hits++; st.combo++; st.add(d < 11 ? 3 : d < 22 ? 2 : 1, tg.x, tg.y - 34, d < 11 ? "#ffc83d" : "#fff"); st.burst(tg.x, tg.y, "#ff5a5a", 10); nt(); }
+          else { st.combo = 0; st.pop(ax, ay - 20, "мимо", "#8f98a0"); }
+        }
+        was = st.down;
+      },
+      draw: function (x) {
+        for (var i = 3; i >= 1; i--) { x.fillStyle = i % 2 ? "#e2433b" : "#fff"; x.beginPath(); x.arc(tg.x, tg.y, i * 11, 0, 7); x.fill(); }
+        x.strokeStyle = "#0b0e14"; x.lineWidth = 5; x.beginPath(); x.arc(ax, ay, 48, 0, 7); x.stroke();
+        x.strokeStyle = C.ac; x.lineWidth = 2; x.beginPath(); x.arc(ax, ay, 48, 0, 7); x.moveTo(ax - 48, ay); x.lineTo(ax - 8, ay); x.moveTo(ax + 8, ay); x.lineTo(ax + 48, ay); x.moveTo(ax, ay - 48); x.lineTo(ax, ay - 8); x.moveTo(ax, ay + 8); x.lineTo(ax, ay + 48); x.stroke();
+        x.fillStyle = "rgba(0,0,0,.6)"; x.fillRect(20, MH - 26, 160, 10); x.fillStyle = breath > .25 ? "#5fe3d2" : "#ff5a5a"; x.fillRect(20, MH - 26, 160 * breath, 10);
+        text(x, "Дыхание", 20, MH - 32, 11, "#c7d5e0", "left", 600);
+      },
+      factor: function () { return st.score / 22; },
+      label: function () { return hits + " попаданий из " + shots; }
+    };
+  });
+
+  /* ---- Выживание ---- */
+  reg(1, 1, "Разожги костёр", "Добудь огонь трением, пока ветер не задул искру", "Быстро води пальцем или мышью с нажатой кнопкой влево-вправо — растёт жар. Остановишься — остынет. При порыве ветра три быстрее вдвое.", function (st, C) {
+    var heat = 0, lx = null, wind = 0, wt = rnd(3, 5), fires = 0, lit = 0;
+    return {
+      dur: 30,
+      update: function (dt) {
+        if (st.down && lx != null) heat += Math.abs(st.px - lx) / (2300 + fires * 500);
+        lx = st.down ? st.px : null;
+        wt -= dt; if (wt <= 0) { if (wind > 0) { wind = 0; wt = rnd(3, 5); } else { wind = 1; wt = 1.3; tone(200, .3, .04, "sawtooth"); } }
+        heat = clamp(heat - dt * (wind ? .5 : .13) * C.diff, 0, 1);
+        if (lit > 0) lit -= dt;
+        if (heat >= 1) { fires++; lit = .8; st.add(5, 360, 150, "#ff9f2e"); st.burst(360, 230, "#ff9f2e", 22); tone(880, .15, .05, "square"); heat = .15; }
+      },
+      draw: function (x) {
+        x.strokeStyle = "#8a5a2b"; x.lineWidth = 12; x.lineCap = "round"; x.beginPath(); x.moveTo(280, 280); x.lineTo(440, 250); x.moveTo(280, 250); x.lineTo(440, 280); x.stroke(); x.lineCap = "butt";
+        var s = lit > 0 ? 70 : 10 + heat * 44; x.globalAlpha = lit > 0 ? 1 : .35 + heat * .65; emo(x, heat > .6 || lit > 0 ? "🔥" : "✨", 360 + (st.down ? rnd(-3, 3) : 0), 240 - s / 3, s); x.globalAlpha = 1;
+        x.fillStyle = "rgba(0,0,0,.6)"; rrect(x, 160, 60, 400, 20, 8); x.fill(); x.fillStyle = heat > .7 ? "#ff5a5a" : "#ff9f2e"; rrect(x, 160, 60, Math.max(6, 400 * heat), 20, 8); x.fill();
+        text(x, wind ? "ВЕТЕР! Три быстрее" : "Три влево-вправо", 360, 110, 16, wind ? "#7db4ff" : "#c7d5e0");
+        text(x, "Костров: " + fires, 620, 180, 16, "#ffc83d");
+      },
+      factor: function () { return st.score / 15; },
+      label: function () { return "Разожжено костров: " + fires; }
+    };
+  });
+  reg(1, 4, "Грибник", "Отбери съедобные грибы и выбрось ядовитые", "Свайп вправо (или нажатие справа, клавиша →) — в корзину, влево — выбросить. Съедобные: белый, лисичка, подберёзовик, опёнок. Ядовитые: мухомор, поганка, сатанинский, ложный опёнок.", function (st, C) {
+    var M = [["Белый гриб", "#8a5a2b", 0, 1], ["Лисичка", "#ffb347", 0, 1], ["Подберёзовик", "#6b5a45", 0, 1], ["Опёнок", "#c9a36a", 0, 1], ["Мухомор", "#e2433b", 1, 0], ["Бледная поганка", "#cfe0b0", 0, 0], ["Сатанинский гриб", "#d9d2c4", 2, 0], ["Ложный опёнок", "#d8c13a", 0, 0]];
+    var cur, t, tmax, fx = 0, fd = 0, right = 0, sx = 0;
+    function nx() { cur = pick(M); tmax = t = Math.max(1.6, 3.2 - right * .05) / Math.sqrt(C.diff); }
+    function choose(take) { if (fx > 0) return; var ok = !!cur[3] === take; fd = take ? 1 : -1; fx = .3; if (ok) { right++; st.combo++; st.add(1 + Math.floor(st.combo / 5), 360, 120, "#7ddc6a"); tone(800, .05, .05); } else { st.combo = 0; st.hurt(360, 200); } }
+    nx();
+    return {
+      dur: 35,
+      down: function (x) { sx = x; },
+      up: function (x) { var dx = x - sx; choose(Math.abs(dx) > 30 ? dx > 0 : x > MW / 2); },
+      key: function (c, d, e) { if (!d || e.repeat) return; if (c === "ArrowRight" || c === "KeyD") { e.preventDefault(); choose(true); } if (c === "ArrowLeft" || c === "KeyA") { e.preventDefault(); choose(false); } },
+      update: function (dt) { if (fx > 0) { fx -= dt; if (fx <= 0) nx(); return; } t -= dt; if (t <= 0) { st.combo = 0; st.hurt(360, 200); nx(); } },
+      draw: function (x) {
+        var ox = fx > 0 ? fd * (1 - fx / .3) * 260 : 0, cx = 360 + ox;
+        x.fillStyle = "rgba(255,90,90,.12)"; x.fillRect(0, 34, 150, MH); x.fillStyle = "rgba(125,220,106,.12)"; x.fillRect(MW - 150, 34, 150, MH);
+        emo(x, "🗑️", 75, 200, 44); emo(x, "🧺", MW - 75, 200, 44);
+        x.fillStyle = "#f4efe2"; rrect(x, cx - 14, 190, 28, 70, 10); x.fill();
+        x.fillStyle = cur[1]; x.beginPath(); x.ellipse(cx, 190, 62, 40, 0, Math.PI, 0); x.fill();
+        if (cur[2] === 1) { x.fillStyle = "#fff"; [[-30, -14], [0, -26], [28, -12], [-8, -8]].forEach(function (p) { x.beginPath(); x.arc(cx + p[0], 190 + p[1], 5, 0, 7); x.fill(); }); }
+        if (cur[2] === 2) { x.fillStyle = "#c0262d"; rrect(x, cx - 14, 196, 28, 26, 6); x.fill(); }
+        text(x, cur[0], 360, 300, 20, "#fff");
+        x.fillStyle = "rgba(255,255,255,.15)"; x.fillRect(0, MH - 6, MW, 6); x.fillStyle = t < .8 ? "#ff5a5a" : "#7ddc6a"; x.fillRect(0, MH - 6, MW * Math.max(0, t) / tmax, 6);
+      },
+      factor: function () { return st.score / 24; },
+      label: function () { return "Верно разобрано: " + right; }
+    };
+  });
+
+  /* ---- Экшен ---- */
+  reg(2, 1, "Паркур по крышам", "Беги по крышам: короткое нажатие — прыжок, долгое — дальний прыжок", "Нажми и отпусти, чтобы прыгнуть. Чем дольше держишь, тем дальше прыжок: широкие пролёты требуют долгого нажатия. Пробел работает так же.", function (st, C) {
+    var Rf = [{ x: -20, w: 460, h: 250 }], py = 250, vy = 0, onG = true, t0 = -1, spd = 235 * Math.sqrt(C.diff), passed = 0, PX = 150;
+    function addRoof() { var l = Rf[Rf.length - 1], gap = Math.random() < .5 ? rnd(55, 85) : rnd(125, 165); Rf.push({ x: l.x + l.w + gap, w: rnd(180, 300), h: clamp(l.h + rnd(-34, 34), 205, 285), n: 1 }); }
+    function press() { if (onG) t0 = st.t; }
+    function release() { if (t0 >= 0 && onG) { var h = clamp(st.t - t0, 0, .3); vy = -(430 + h * 1100); onG = false; tone(480 + h * 900, .06, .04); } t0 = -1; }
+    return {
+      dur: 30,
+      down: press, up: release,
+      key: function (c, d, e) { if (c !== "Space" && c !== "ArrowUp") return; e.preventDefault(); if (e.repeat) return; if (d) press(); else release(); },
+      update: function (dt) {
+        spd += dt * 3;
+        Rf.forEach(function (r) { r.x -= spd * dt; });
+        while (Rf[Rf.length - 1].x + Rf[Rf.length - 1].w < MW + 260) addRoof();
+        if (Rf[0].x + Rf[0].w < -60) Rf.shift();
+        var cur = null; Rf.forEach(function (r) { if (r.x <= PX + 10 && r.x + r.w >= PX - 10) cur = r; });
+        var prev = py; vy += 1500 * dt; py += vy * dt;
+        if (cur && vy >= 0 && prev <= cur.h + 2 && py >= cur.h) { py = cur.h; vy = 0; if (!onG && cur.n) { cur.n = 0; passed++; st.add(1, PX, py - 50, "#7ddc6a"); } onG = true; }
+        else if (!cur || py < cur.h) onG = onG && !!cur && py >= cur.h;
+        if (py > MH + 60) { st.hurt(PX, MH - 20); var nx = null; Rf.forEach(function (r) { if (!nx && r.x + r.w > PX + 40) nx = r; }); var sh = nx.x - (PX - 40); Rf.forEach(function (r) { r.x -= sh; }); py = nx.h - 90; vy = 0; onG = false; t0 = -1; }
+      },
+      draw: function (x) {
+        Rf.forEach(function (r) { x.fillStyle = "#1b2433"; x.fillRect(r.x, r.h, r.w, MH - r.h); x.fillStyle = C.ac; x.fillRect(r.x, r.h, r.w, 5); x.fillStyle = "rgba(255,214,102,.5)"; for (var wx = r.x + 16; wx < r.x + r.w - 20; wx += 34) x.fillRect(wx, r.h + 24, 12, 16); });
+        emo(x, "🏃", PX, py - 22, 40);
+        if (t0 >= 0) { x.fillStyle = "rgba(255,255,255,.2)"; x.fillRect(PX - 30, py - 62, 60, 6); x.fillStyle = "#ffc83d"; x.fillRect(PX - 30, py - 62, 60 * clamp((st.t - t0) / .3, 0, 1), 6); }
+      },
+      factor: function () { return passed / 22; },
+      label: function () { return "Крыш пройдено: " + passed; }
+    };
+  });
+  reg(2, 7, "Обезвредь бомбу", "Режь провода в порядке из инструкции — верь слову, а не цвету букв", "Сверху порядок проводов словами. Цвет букв нарочно путает: смотри только на слово. Нажимай на провода в этом порядке, пока не вышло время.", function (st, C) {
+    var COL = [["красный", "#e2433b"], ["синий", "#3b82f6"], ["жёлтый", "#ffd23d"], ["зелёный", "#4cd08a"], ["белый", "#e9eef7"]], W, ord, ink, step, t, tmax, done = 0, cut;
+    function gen() { W = [0, 1, 2, 3, 4].sort(function () { return Math.random() - .5; }); ord = W.slice().sort(function () { return Math.random() - .5; }).slice(0, 3); ink = ord.map(function (o) { var k; do { k = Math.floor(Math.random() * 5); } while (k === o); return k; }); step = 0; cut = {}; tmax = t = Math.max(4.5, 9 - done * .5) / Math.sqrt(C.diff); }
+    gen();
+    return {
+      dur: 45,
+      down: function (x, y) {
+        if (y < 150) return;
+        var k = Math.floor((x - 110) / 100); if (k < 0 || k > 4 || cut[k]) return;
+        if (W[k] === ord[step]) { cut[k] = 1; step++; tone(600 + step * 120, .06, .05); if (step === 3) { done++; st.add(3 + Math.floor(t), 360, 130, "#7ddc6a"); tone(880, .15, .05, "square"); gen(); } }
+        else { st.hurt(160 + k * 100, 240); st.burst(360, 240, "#ff9f2e", 26); gen(); }
+      },
+      update: function (dt) { t -= dt; if (t <= 0) { st.hurt(360, 240); st.burst(360, 240, "#ff9f2e", 26); gen(); } },
+      draw: function (x) {
+        text(x, "Режь по порядку:", 360, 62, 13, "#c7d5e0", "center", 500);
+        ord.forEach(function (o, i) { x.globalAlpha = i < step ? .3 : 1; text(x, (i + 1) + ". " + COL[o][0].toUpperCase(), 180 + i * 180, 98, 22, COL[ink[i]][1]); x.globalAlpha = 1; });
+        x.fillStyle = "#23262e"; rrect(x, 90, 150, 540, 30, 8); x.fill(); rrect(x, 90, 300, 540, 30, 8); x.fill();
+        W.forEach(function (w, k) { var wx = 160 + k * 100; x.strokeStyle = COL[w][1]; x.lineWidth = 12; x.beginPath(); if (cut[k]) { x.moveTo(wx, 180); x.lineTo(wx - 8, 222); x.moveTo(wx + 8, 258); x.lineTo(wx, 300); } else { x.moveTo(wx, 180); x.bezierCurveTo(wx + 24, 220, wx - 24, 260, wx, 300); } x.stroke(); });
+        text(x, t.toFixed(1).replace(".", ","), 665, 250, 26, t < 2 ? "#ff5a5a" : "#ffc83d");
+      },
+      factor: function () { return st.score / 30; },
+      label: function () { return "Бомб обезврежено: " + done; }
+    };
+  });
+
+  /* ---- Инди ---- */
+  reg(3, 4, "Гравитация", "Переворачивай гравитацию, чтобы кубик проскочил мимо шипов", "Каждое нажатие (или пробел) перебрасывает кубик с пола на потолок и обратно. Шипы стоят то сверху, то снизу — успевай менять сторону.", function (st, C) {
+    var side = 0, pos = 0, O = [], sp = .8, passed = 0, inv = 0, spd = 260 * Math.sqrt(C.diff), TOP = 70, BOT = 320, last = -1;
+    function flip() { side = side ? 0 : 1; tone(side ? 620 : 420, .05, .04); }
+    return {
+      dur: 30,
+      down: flip, key: tapKey(flip),
+      update: function (dt) {
+        spd += dt * 4; pos += (side - pos) * Math.min(1, dt * 14); if (inv > 0) inv -= dt;
+        sp -= dt;
+        if (sp <= 0) { var s = Math.random() < .65 ? (last ? 0 : 1) : Math.floor(Math.random() * 2); last = s; O.push({ x: MW + 30, s: s, ok: 0 }); sp = rnd(.55, 1) * 260 / spd; }
+        O = O.filter(function (o) {
+          o.x -= spd * dt;
+          if (Math.abs(o.x - 150) < 26 && inv <= 0 && Math.abs(pos - o.s) < .55) { st.hurt(150, o.s ? TOP + 20 : BOT - 20); inv = 1; o.ok = 1; }
+          if (!o.ok && o.x < 120) { o.ok = 1; passed++; st.add(1, 150, 190, "#7ddc6a"); }
+          return o.x > -40;
+        });
+      },
+      draw: function (x) {
+        x.fillStyle = "rgba(0,0,0,.5)"; x.fillRect(0, 34, MW, TOP - 34); x.fillRect(0, BOT, MW, MH - BOT);
+        x.strokeStyle = C.ac; x.lineWidth = 3; x.beginPath(); x.moveTo(0, TOP); x.lineTo(MW, TOP); x.moveTo(0, BOT); x.lineTo(MW, BOT); x.stroke();
+        x.fillStyle = "#ff5a5a"; O.forEach(function (o) { x.beginPath(); if (o.s) { x.moveTo(o.x - 20, TOP); x.lineTo(o.x, TOP + 46); x.lineTo(o.x + 20, TOP); } else { x.moveTo(o.x - 20, BOT); x.lineTo(o.x, BOT - 46); x.lineTo(o.x + 20, BOT); } x.closePath(); x.fill(); });
+        if (inv > 0 && Math.floor(inv * 12) % 2) return;
+        var cy = BOT - 18 + (TOP + 18 - (BOT - 18)) * pos; x.save(); x.translate(150, cy); x.rotate(pos * Math.PI); x.fillStyle = C.ac; rrect(x, -17, -17, 34, 34, 7); x.fill(); x.fillStyle = "#fff"; x.fillRect(2, -9, 7, 7); x.restore();
+      },
+      factor: function () { return passed / 26; },
+      label: function () { return "Шипов пройдено: " + passed; }
+    };
+  });
+  reg(3, 7, "Акварель", "Смешай краски так, чтобы получился заданный оттенок", "Нажимай на красную, жёлтую, синюю и белую краску — каждая добавляет каплю в палитру. Сравни свой цвет с образцом и нажми «Готово». «Смыть» очищает палитру.", function (st, C) {
+    var P = [[226, 67, 59], [255, 210, 61], [59, 111, 226], [245, 245, 245]], NM = ["красная", "жёлтая", "синяя", "белая"], tg, mix, done = 0, msg = "", mt = 0;
+    function col(c) { var n = c[0] + c[1] + c[2] + c[3]; if (!n) return "#2a3242"; var r = 0, g = 0, b = 0; c.forEach(function (v, i) { r += P[i][0] * v; g += P[i][1] * v; b += P[i][2] * v; }); return "rgb(" + Math.round(r / n) + "," + Math.round(g / n) + "," + Math.round(b / n) + ")"; }
+    function gen() { var n = Math.min(6, 2 + Math.floor(done / 2) + (C.diff > 1.2 ? 1 : 0)); do { tg = [0, 0, 0, 0]; for (var i = 0; i < n; i++) tg[Math.floor(Math.random() * 4)]++; } while (tg.filter(function (v) { return v; }).length < 2); mix = [0, 0, 0, 0]; }
+    function same() { var a = tg[0] + tg[1] + tg[2] + tg[3], b = mix[0] + mix[1] + mix[2] + mix[3], d = 0; if (!b) return 9; for (var i = 0; i < 4; i++) d += Math.abs(tg[i] / a - mix[i] / b); return d; }
+    gen();
+    return {
+      dur: 50,
+      down: function (x, y) {
+        if (mt > 0) return;
+        for (var i = 0; i < 4; i++) if (Math.hypot(x - (150 + i * 140), y - 280) < 40) { if (mix[0] + mix[1] + mix[2] + mix[3] < 8) { mix[i]++; tone(400 + i * 90, .05, .04); } return; }
+        if (inR(x, y, 560, 60, 130, 50)) { var d = same(); if (d < .02) { done++; st.add(4, 360, 150, "#7ddc6a"); msg = "Точно!"; tone(880, .15, .05, "square"); } else if (d < .3) { done++; st.add(1, 360, 150, "#ffc83d"); msg = "Похоже"; } else { msg = "Не тот оттенок"; st.hurt(450, 150); } mt = .9; }
+        if (inR(x, y, 560, 124, 130, 50)) { mix = [0, 0, 0, 0]; tone(200, .08, .04); }
+      },
+      update: function (dt) { if (mt > 0) { mt -= dt; if (mt <= 0) { msg = ""; gen(); } } },
+      draw: function (x) {
+        text(x, "Образец", 170, 62, 12, "#c7d5e0", "center", 500); text(x, "Твой цвет", 400, 62, 12, "#c7d5e0", "center", 500);
+        x.fillStyle = col(tg); rrect(x, 90, 72, 160, 110, 14); x.fill(); x.fillStyle = col(mix); rrect(x, 320, 72, 160, 110, 14); x.fill();
+        x.strokeStyle = "rgba(255,255,255,.25)"; x.lineWidth = 2; rrect(x, 320, 72, 160, 110, 14); x.stroke();
+        btn(x, 560, 60, 130, 50, "Готово", "#75b022"); btn(x, 560, 124, 130, 50, "Смыть", "#4a5866");
+        for (var i = 0; i < 4; i++) { x.fillStyle = "rgb(" + P[i].join(",") + ")"; x.beginPath(); x.arc(150 + i * 140, 280, 36, 0, 7); x.fill(); text(x, NM[i] + (mix[i] ? " ×" + mix[i] : ""), 150 + i * 140, 340, 12, "#c7d5e0", "center", 600); }
+        if (msg) text(x, msg, 400, 216, 18, msg === "Не тот оттенок" ? "#ff5a5a" : "#7ddc6a");
+      },
+      factor: function () { return st.score / 22; },
+      label: function () { return "Оттенков подобрано: " + done; }
+    };
+  });
+
+  /* ---- Хоррор ---- */
+  reg(4, 1, "Не моргай", "Манекены двигаются, только когда ты не смотришь", "Держи палец или кнопку мыши — глаза открыты, манекены стоят. Но глаза сохнут: отпускай ненадолго, чтобы моргнуть. Пока глаза закрыты, манекены идут к тебе.", function (st, C) {
+    var d = [1, .95, .9], dry = 0, blink = 0, sec = 0, surv = 0;
+    return {
+      dur: 30,
+      update: function (dt) {
+        var open = st.down && blink <= 0;
+        if (blink > 0) blink -= dt;
+        if (open) { dry += dt * .3 * C.diff; if (dry >= 1) { blink = .7; dry = .2; tone(90, .3, .06, "sawtooth"); } }
+        else { dry = Math.max(0, dry - dt * 1.6); d = d.map(function (v, i) { return v - dt * (.2 + i * .04) * C.diff; }); }
+        for (var i = 0; i < 3; i++) if (d[i] <= 0) { st.hurt(180 + i * 180, 220); d[i] = .85; }
+        surv += dt; sec += dt; if (sec >= 1) { sec -= 1; if (open) st.add(1, 360, 60, "#c7d5e0"); }
+      },
+      draw: function (x) {
+        var open = st.down && blink <= 0;
+        x.fillStyle = "rgba(0,0,0,.45)"; x.fillRect(0, 270, MW, 90);
+        d.forEach(function (v, i) { var s = 30 + (1 - v) * 150; emo(x, "🧍", 180 + i * 180, 280 - s * .45, s); });
+        if (!open) { x.fillStyle = "rgba(0,0,0,.93)"; x.fillRect(0, 34, MW, MH); text(x, blink > 0 ? "Глаза закрылись сами…" : "Глаза закрыты — они идут", 360, 190, 18, "#ff5a5a"); }
+        x.fillStyle = "rgba(0,0,0,.6)"; x.fillRect(20, MH - 26, 180, 10); x.fillStyle = dry > .75 ? "#ff5a5a" : "#7db4ff"; x.fillRect(20, MH - 26, 180 * dry, 10);
+        text(x, "Сухость глаз", 20, MH - 32, 11, "#c7d5e0", "left", 600);
+      },
+      factor: function () { return st.score / 24; },
+      label: function () { return "Секунд с открытыми глазами: " + st.score; }
+    };
+  });
+  reg(4, 24, "Свеча на сквозняке", "Прикрывай свечу рукой с той стороны, откуда дует", "Перед порывом с одной стороны появляются полосы ветра. Нажми и держи эту сторону экрана (или клавиши ← →), чтобы закрыть пламя. Пропустил порыв — свеча гаснет.", function (st, C) {
+    var g = null, wait = 1.2, saved = 0, keys = {}, flame = 1;
+    function hand() { if (keys.ArrowLeft || keys.KeyA) return -1; if (keys.ArrowRight || keys.KeyD) return 1; return st.down ? (st.px < MW / 2 ? -1 : 1) : 0; }
+    return {
+      dur: 30,
+      key: function (c, d, e) { if (c === "ArrowLeft" || c === "ArrowRight" || c === "KeyA" || c === "KeyD") { keys[c] = d; e.preventDefault(); } },
+      update: function (dt) {
+        flame = Math.min(1, flame + dt * .5);
+        if (!g) { wait -= dt; if (wait <= 0) g = { s: Math.random() < .5 ? -1 : 1, t: Math.max(.38, .85 - saved * .02) / Math.sqrt(C.diff), hit: .25 }; return; }
+        g.t -= dt;
+        if (g.t <= 0) {
+          if (g.hit === .25) { if (hand() === g.s) { saved++; st.combo++; st.add(1 + Math.floor(st.combo / 5), 360, 120, "#ffc83d"); tone(700, .05, .04); } else { st.combo = 0; flame = .15; st.hurt(360, 200); } }
+          g.hit -= dt; if (g.hit <= 0) { g = null; wait = rnd(.35, 1.1) / C.diff; }
+        }
+      },
+      draw: function (x) {
+        var h = hand();
+        x.fillStyle = "#e9e2d0"; rrect(x, 345, 210, 30, 100, 6); x.fill(); x.fillStyle = "#1b2433"; x.fillRect(359, 198, 2, 14);
+        emo(x, "🔥", 360 + (g && g.t <= 0 ? g.s * 10 : rnd(-1, 1)), 180, 26 + flame * 34);
+        if (g) { x.strokeStyle = "rgba(190,220,255," + (g.t > 0 ? .5 : .95) + ")"; x.lineWidth = 3; for (var i = 0; i < 5; i++) { var y = 110 + i * 34, x0 = g.s < 0 ? 30 : MW - 30, len = g.t > 0 ? 70 : 250; x.beginPath(); x.moveTo(x0, y); x.lineTo(x0 - g.s * len, y + Math.sin(i + st.t * 9) * 5); x.stroke(); } }
+        if (h) emo(x, "✋", 360 + h * 62, 190, 60);
+        text(x, "Держи сторону, откуда дует", 360, 345, 12, "#c7d5e0", "center", 500);
+      },
+      factor: function () { return st.score / 24; },
+      label: function () { return "Порывов отбито: " + saved; }
+    };
+  });
+
+  /* ---- RPG ---- */
+  reg(5, 1, "Пошаговая дуэль", "Читай намерение монстра и отвечай ударом, блоком или магией", "Над монстром написано, что он сделает. Удар — 4 урона, Блок гасит почти весь урон, Магия — 8 урона, но перезаряжается 2 хода. Против «Замаха» ставь блок на следующий ход.", function (st, C) {
+    var hp = 20, mhp, mmax, lv = 0, intent, cd = 0, lock = 0, msg = "Твой ход", kills = 0, ME = ["👺", "🧟", "🐺", "👹", "🐲"];
+    function plan() { var r = Math.random(); intent = intent === "wind" ? "heavy" : r < .5 ? "atk" : r < .75 ? "wind" : "def"; }
+    function spawn() { lv++; mmax = mhp = Math.round((9 + lv * 4) * C.diff); intent = ""; plan(); }
+    function act(a) {
+      if (lock > 0 || (a === 2 && cd > 0)) return;
+      var dmg = a === 0 ? 4 : a === 2 ? 8 : 0; if (intent === "def") dmg = Math.floor(dmg / 2);
+      if (a === 2) cd = 3; mhp -= dmg; if (dmg) { st.burst(520, 170, "#ff5a5a", 8); tone(300, .06, .05, "square"); }
+      var inc = intent === "atk" ? 4 + lv : intent === "heavy" ? 9 + lv * 2 : 0; if (a === 1) inc = Math.floor(inc * .2);
+      if (mhp <= 0) { kills++; st.add(5, 520, 120, "#ffc83d"); tone(880, .15, .05, "square"); hp = Math.min(20, hp + 6); msg = "Монстр повержен!"; lock = .8; spawn(); if (cd > 0) cd--; return; }
+      hp -= inc; msg = (dmg ? "Ты нанёс " + dmg + ". " : a === 1 ? "Блок. " : "") + (inc ? "Получено " + inc : "Урона нет");
+      if (hp <= 0) { st.hurt(200, 200); hp = 20; msg = "Ты пал, но встал снова"; }
+      if (cd > 0) cd--; lock = .45; plan();
+    }
+    spawn();
+    return {
+      dur: 60,
+      down: function (x, y) { if (y < 282 || y > 340) return; for (var i = 0; i < 3; i++) if (x > 140 + i * 150 && x < 280 + i * 150) act(i); },
+      key: function (c, d, e) { var m = { Digit1: 0, Digit2: 1, Digit3: 2 }[c]; if (d && m !== undefined && !e.repeat) act(m); },
+      update: function (dt) { if (lock > 0) lock -= dt; },
+      draw: function (x) {
+        emo(x, "🧙", 200, 180, 70); emo(x, ME[(lv - 1) % ME.length], 520, 180, 80);
+        [[200, hp, 20, "#7ddc6a"], [520, mhp, mmax, "#ff5a5a"]].forEach(function (b) { x.fillStyle = "rgba(0,0,0,.6)"; x.fillRect(b[0] - 60, 236, 120, 10); x.fillStyle = b[3]; x.fillRect(b[0] - 60, 236, 120 * clamp(b[1] / b[2], 0, 1), 10); text(x, Math.max(0, b[1]) + " / " + b[2], b[0], 264, 12, "#fff", "center", 600); });
+        var IT = { atk: ["Атакует", "#ff9f2e"], wind: ["Замах! Дальше мощный удар", "#ffc83d"], heavy: ["МОЩНЫЙ УДАР", "#ff5a5a"], def: ["Защищается", "#7db4ff"] }[intent];
+        text(x, IT[0], 520, 110, 15, IT[1]); text(x, msg, 360, 70, 14, "#c7d5e0", "center", 600);
+        btn(x, 140, 284, 140, 50, "1 · Удар", "#b8262f"); btn(x, 290, 284, 140, 50, "2 · Блок", "#3e6fd1"); btn(x, 440, 284, 140, 50, cd > 0 ? "Магия (" + cd + ")" : "3 · Магия", "#7652c9", cd <= 0);
+      },
+      factor: function () { return st.score / 15; },
+      label: function () { return "Монстров повержено: " + kills; }
+    };
+  });
+  reg(5, 4, "Мимик", "Только в одном сундуке сокровище — найди его по подсказкам, остальные кусаются", "Прочитай подсказки и нажми на единственный сундук, который им всем подходит. Ошибся — мимик укусит. Чем быстрее ответ, тем больше очков.", function (st, C) {
+    var CN = [["красный", "#e2433b"], ["синий", "#3b82f6"], ["зелёный", "#4cd08a"], ["золотой", "#ffd23d"]], ch, tr, clues, t, tmax, found = 0, rev = -1, rt = 0;
+    function mk() {
+      ch = [0, 1, 2, 3].sort(function () { return Math.random() - .5; }); tr = Math.floor(Math.random() * 4);
+      var all = [];
+      all.push({ s: tr === 0 || tr === 3 ? "Сокровище в крайнем сундуке" : "Сокровище не в крайнем сундуке", f: function (i) { return (i === 0 || i === 3) === (tr === 0 || tr === 3); } });
+      ch.forEach(function (c, p) { if (p !== tr) { all.push({ s: "Сокровище " + (tr < p ? "левее" : "правее") + ", чем " + CN[c][0], f: function (i) { return tr < p ? i < p : i > p; } }); all.push({ s: "Сундук с сокровищем не " + CN[c][0], f: function (i) { return i !== p; } }); } });
+      all.sort(function () { return Math.random() - .5; });
+      clues = []; var ok = [0, 1, 2, 3];
+      for (var k = 0; k < all.length && ok.length > 1; k++) { var nk = ok.filter(all[k].f); if (nk.length < ok.length) { clues.push(all[k].s); ok = nk; } }
+      tmax = t = Math.max(5, 11 - found * .4) / Math.sqrt(C.diff); rev = -1;
+    }
+    mk();
+    return {
+      dur: 50,
+      down: function (x, y) {
+        if (rev >= 0 || y < 190 || y > 320) return;
+        var i = Math.floor((x - 80) / 140); if (i < 0 || i > 3) return;
+        rev = i; rt = .9;
+        if (i === tr) { found++; st.combo++; st.add(2 + Math.floor(t / 3), 150 + i * 140, 200, "#ffc83d"); tone(880, .12, .05, "square"); } else { st.combo = 0; st.hurt(150 + i * 140, 250); }
+      },
+      update: function (dt) { if (rev >= 0) { rt -= dt; if (rt <= 0) mk(); return; } t -= dt; if (t <= 0) { st.hurt(360, 250); rev = 9; rt = .9; } },
+      draw: function (x) {
+        clues.forEach(function (s, i) { text(x, "• " + s, 360, 62 + i * 24, 15, "#fff", "center", 600); });
+        ch.forEach(function (c, i) {
+          var cx = 150 + i * 140;
+          if (rev >= 0 && (i === rev || i === tr)) emo(x, i === tr ? "💰" : "👹", cx, 250, 62);
+          else { x.fillStyle = CN[c][1]; rrect(x, cx - 48, 222, 96, 70, 8); x.fill(); x.fillStyle = "rgba(0,0,0,.28)"; x.fillRect(cx - 48, 246, 96, 8); x.fillStyle = "#1b2433"; rrect(x, cx - 9, 240, 18, 22, 4); x.fill(); }
+          text(x, CN[c][0], cx, 316, 12, "#c7d5e0", "center", 600);
+        });
+        x.fillStyle = "rgba(255,255,255,.15)"; x.fillRect(0, MH - 6, MW, 6); x.fillStyle = t < 2 ? "#ff5a5a" : "#7ddc6a"; x.fillRect(0, MH - 6, MW * Math.max(0, t) / tmax, 6);
+      },
+      factor: function () { return st.score / 26; },
+      label: function () { return "Сокровищ найдено: " + found; }
+    };
+  });
+
+  /* ---- Стратегии ---- */
+  reg(6, 1, "Оборона на одной линии", "Ставь и улучшай башни вдоль дороги, чтобы враги не дошли до ворот", "Нажми на площадку, чтобы построить башню (20 монет), ещё раз — улучшить. Монеты дают за убитых врагов. Башни стреляют сами.", function (st, C) {
+    var SL = [150, 270, 390, 510, 630].map(function (x) { return { x: x, lv: 0, cd: 0 }; }), E = [], S = [], coin = 40, sp = 1.5, kills = 0, LY = 230, n = 0;
+    function cost(s) { return s.lv ? 25 * s.lv : 20; }
+    return {
+      dur: 50,
+      down: function (x, y) { if (y < 90 || y > 200) return; SL.forEach(function (s) { if (Math.abs(x - s.x) < 46 && s.lv < 4 && coin >= cost(s)) { coin -= cost(s); s.lv++; tone(500 + s.lv * 100, .08, .05, "square"); } }); },
+      update: function (dt) {
+        sp -= dt;
+        if (sp <= 0) { n++; var big = n % 6 === 0; sp = Math.max(.5, 1.7 - st.t * .022) / Math.sqrt(C.diff); var hp = (big ? 14 : 4) + st.t * .16; E.push({ x: MW + 20, hp: hp, mx: hp, v: (big ? 30 : 48) * Math.sqrt(C.diff), big: big }); }
+        SL.forEach(function (s) {
+          if (!s.lv) return; s.cd -= dt; if (s.cd > 0) return;
+          var tg = null; E.forEach(function (e) { if (Math.abs(e.x - s.x) < 120 && (!tg || e.x < tg.x)) tg = e; });
+          if (tg) { s.cd = .62; tg.hp -= 1.5 + s.lv * 1.5; S.push({ x: s.x, tx: tg.x, t: .12 }); }
+        });
+        S = S.filter(function (b) { b.t -= dt; return b.t > 0; });
+        E = E.filter(function (e) {
+          if (e.hp <= 0) { kills++; coin += e.big ? 14 : 5; st.add(e.big ? 3 : 1, e.x, LY - 30, "#ffc83d"); return false; }
+          e.x -= e.v * dt; if (e.x < 46) { st.hurt(46, LY); return false; } return true;
+        });
+      },
+      draw: function (x) {
+        x.fillStyle = "rgba(0,0,0,.5)"; x.fillRect(0, LY - 26, MW, 52); emo(x, "🏰", 34, LY - 6, 54);
+        SL.forEach(function (s) {
+          x.fillStyle = "rgba(255,255,255,.08)"; rrect(x, s.x - 40, 100, 80, 92, 10); x.fill();
+          if (s.lv) { emo(x, "🗼", s.x, 138, 40 + s.lv * 4); text(x, "ур. " + s.lv, s.x, 178, 11, "#fff", "center", 600); }
+          if (s.lv < 4) text(x, (s.lv ? "↑ " : "+ ") + cost(s), s.x, s.lv ? 190 : 150, 13, coin >= cost(s) ? "#ffc83d" : "#8f98a0");
+        });
+        x.strokeStyle = "#ffe14a"; x.lineWidth = 3; S.forEach(function (b) { x.beginPath(); x.moveTo(b.x, 150); x.lineTo(b.tx, LY - 6); x.stroke(); });
+        E.forEach(function (e) { emo(x, e.big ? "👹" : "👾", e.x, LY - 2, e.big ? 44 : 30); x.fillStyle = "rgba(0,0,0,.6)"; x.fillRect(e.x - 16, LY - 34, 32, 4); x.fillStyle = "#ff5a5a"; x.fillRect(e.x - 16, LY - 34, 32 * clamp(e.hp / e.mx, 0, 1), 4); });
+        text(x, "Монеты: " + coin, 360, 70, 17, "#ffc83d");
+      },
+      factor: function () { return st.score / 34; },
+      label: function () { return "Врагов остановлено: " + kills; }
+    };
+  });
+  reg(6, 6, "Морской бой", "Потопи флот противника на поле 6×6 раньше, чем он потопит твой", "Нажимай на клетки правого поля, чтобы стрелять. После каждого твоего выстрела стреляет противник. У каждого четыре корабля: трёхпалубный, два двухпалубных и однопалубный.", function (st, C) {
+    var N = 6, CS = 44, OY = 62, AX = 56, BX = 400, mine = mk(), foe = mk(), turn = 1, wait = 0, msg = "Твой ход", sunk = 0, hunt = [];
+    function mk() {
+      var g = []; for (var i = 0; i < N * N; i++) g.push(0); var ships = [];
+      [3, 2, 2, 1].forEach(function (len) {
+        for (var tries = 0; tries < 200; tries++) {
+          var hz = Math.random() < .5, x = Math.floor(Math.random() * (hz ? N - len + 1 : N)), y = Math.floor(Math.random() * (hz ? N : N - len + 1)), cells = [], ok = true;
+          for (var k = 0; k < len; k++) cells.push((y + (hz ? 0 : k)) * N + x + (hz ? k : 0));
+          cells.forEach(function (c) { for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) { var X = c % N + dx, Y = Math.floor(c / N) + dy; if (X >= 0 && Y >= 0 && X < N && Y < N && g[Y * N + X]) ok = false; } });
+          if (ok) { cells.forEach(function (c) { g[c] = 1; }); ships.push(cells); break; }
+        }
+      });
+      return { g: g, ships: ships, shot: [] };
+    }
+    function fire(b, k) { b.shot[k] = 1; if (!b.g[k]) return 0; var sh = b.ships.filter(function (s) { return s.indexOf(k) >= 0; })[0]; return sh.every(function (c) { return b.shot[c]; }) ? 2 : 1; }
+    function left(b) { return b.ships.filter(function (s) { return !s.every(function (c) { return b.shot[c]; }); }).length; }
+    function bot() {
+      var k = -1; while (hunt.length && k < 0) { var h = hunt.pop(); if (!mine.shot[h]) k = h; }
+      if (k < 0) { var f = []; for (var i = 0; i < N * N; i++) if (!mine.shot[i]) f.push(i); k = pick(f); }
+      var r = fire(mine, k);
+      if (r === 1 && Math.random() < .5 + .25 * C.diff) { var x = k % N; if (x > 0) hunt.push(k - 1); if (x < N - 1) hunt.push(k + 1); if (k >= N) hunt.push(k - N); if (k < N * (N - 1)) hunt.push(k + N); }
+      if (r) tone(200, .1, .06, "sawtooth");
+      if (!left(mine)) { msg = "Твой флот потоплен"; st.lives = 0; return; }
+      turn = 1; msg = r ? "Противник попал. Твой ход" : "Противник промахнулся. Твой ход";
+    }
+    function board(x, b, ox, show) {
+      for (var k = 0; k < N * N; k++) {
+        var cx = ox + (k % N) * CS, cy = OY + Math.floor(k / N) * CS;
+        x.fillStyle = b.shot[k] ? (b.g[k] ? "#b8262f" : "rgba(0,0,0,.6)") : show && b.g[k] ? "#4a6a8a" : "rgba(59,111,226,.28)"; rrect(x, cx + 2, cy + 2, CS - 4, CS - 4, 5); x.fill();
+        if (b.shot[k]) text(x, b.g[k] ? "✕" : "•", cx + CS / 2, cy + CS / 2 + 7, 20, "#fff");
+      }
+    }
+    return {
+      dur: 80,
+      down: function (x, y) {
+        if (turn !== 1) return;
+        var k = cellAt(x, y, BX, OY, CS, N, N); if (k < 0 || foe.shot[k]) return;
+        var r = fire(foe, k);
+        if (r) { st.add(r === 2 ? 5 : 2, x, y - 10, "#ffc83d"); tone(r === 2 ? 880 : 600, .1, .05, "square"); if (r === 2) sunk++; } else tone(150, .06, .04);
+        if (!left(foe)) { st.add(10, 360, 180, "#7ddc6a"); msg = "Победа!"; st.over = true; return; }
+        turn = 2; wait = .55; msg = r === 2 ? "Потопил! Ход противника" : r ? "Попал! Ход противника" : "Мимо. Ход противника";
+      },
+      update: function (dt) { if (turn === 2) { wait -= dt; if (wait <= 0) bot(); } },
+      draw: function (x) {
+        text(x, "Твой флот: " + left(mine), AX + 132, 54, 12, "#c7d5e0", "center", 600); text(x, "Флот врага: " + left(foe), BX + 132, 54, 12, "#c7d5e0", "center", 600);
+        board(x, mine, AX, true); board(x, foe, BX, false);
+        text(x, msg, 360, 346, 14, "#fff", "center", 600);
+      },
+      factor: function () { return st.score / 23; },
+      label: function () { return "Кораблей потоплено: " + sunk + " из 4"; }
+    };
+  });
+
+  /* привязка: жанр = кейс игры, слот = её номер в кейсе; мифический кейс берёт игры по кругу из всех жанров */
+  GAMES.forEach(function (g) {
+    var m = MG[(g.ci < 7 ? g.ci : g.k % 7) + ":" + (g.k % 25 + 1)];
+    if (m) { g.mg = m; g.eng = m.id; g.mt = m.t; TH[g.n] = m.goal; }
+  });
+
   function accentOf(img) {
     try {
       var c = document.createElement("canvas"); c.width = 24; c.height = 12;
@@ -4002,7 +4473,7 @@ if (/tgWebApp/.test(location.hash) || (function () { try { return !!sessionStora
     $("mgStart").addEventListener("click", function () { if (S.energy < 30) return; S.energy -= 30; startMini(g); });
   }
   function stopMini() {
-    $("mgm").classList.remove("play");
+    $("mgm").classList.remove("play"); $("mgpause").hidden = true;
     if (!mgRun) return;
     mgRun.alive = false;
     if (mgRun.raf) cancelAnimationFrame(mgRun.raf);
@@ -4014,8 +4485,10 @@ if (/tgWebApp/.test(location.hash) || (function () { try { return !!sessionStora
   function startMini(g) {
     stopMini();
     var a = freshArea(), cv = document.createElement("canvas");
-    cv.width = MW; cv.height = MH; a.appendChild(cv);
-    var ctx = cv.getContext("2d");
+    /* чёткая графика на экранах с высокой плотностью: рисуем в логических 720×360, канвас крупнее */
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = MW * dpr; cv.height = MH * dpr; a.appendChild(cv);
+    var ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
     var hv = 0, s2 = g.n; for (var hi = 0; hi < s2.length; hi++) { hv = (hv * 31 + s2.charCodeAt(hi)) >>> 0; }
     var C = { ac: accentOf(mgImg), diff: (1 + g.r * .12 + (CASES[g.ci].myth ? .15 : 0)) * (0.85 + (hv % 31) / 100), val: 1 + ((hv >> 6) % 31) / 100, th: themeOf(g) }, bg = bgCanvas(mgImg);
     var st = { score: 0, lives: 3, maxLives: 3, t: 0, combo: 0, px: null, py: null, down: false, kdown: false, moved: false, over: false, flash: 0, shake: 0, P: [] };
@@ -4030,9 +4503,23 @@ if (/tgWebApp/.test(location.hash) || (function () { try { return !!sessionStora
     /* на телефоне в портретной ориентации поле повёрнуто на 90°, пересчитываем координаты касаний */
     function pos(e) { var r = cv.getBoundingClientRect(); if (r.height > r.width * 1.2) return { x: (e.clientY - r.top) * MW / r.height, y: (r.right - e.clientX) * MH / r.width }; return { x: (e.clientX - r.left) * MW / r.width, y: (e.clientY - r.top) * MH / r.height }; }
     function on(t, ev, fn, opt) { t.addEventListener(ev, fn, opt); run.off.push(function () { t.removeEventListener(ev, fn, opt); }); }
-    on(cv, "pointerdown", function (e) { e.preventDefault(); var p = pos(e); st.px = p.x; st.py = p.y; st.down = true; try { cv.setPointerCapture(e.pointerId); } catch (er) {} if (pre <= 0 && !endT && E.down) E.down(p.x, p.y, e.button); });
-    on(cv, "pointermove", function (e) { var p = pos(e); st.px = p.x; st.py = p.y; st.moved = true; });
-    on(window, "pointerup", function () { st.down = false; });
+    /* единый ввод: down / move / up, а также готовый свайп (направление и длина) для игр, которым он нужен */
+    var live = function () { return pre <= 0 && !endT && !run.paused; }, sx0 = 0, sy0 = 0;
+    on(cv, "pointerdown", function (e) { e.preventDefault(); var p = pos(e); st.px = p.x; st.py = p.y; st.down = true; sx0 = p.x; sy0 = p.y; try { cv.setPointerCapture(e.pointerId); } catch (er) {} if (live() && E.down) E.down(p.x, p.y, e.button); });
+    on(cv, "pointermove", function (e) { var p = pos(e); st.px = p.x; st.py = p.y; st.moved = true; if (live() && E.move) E.move(p.x, p.y); });
+    on(window, "pointerup", function () {
+      if (!st.down) return;
+      st.down = false;
+      if (!live()) return;
+      if (E.up) E.up(st.px, st.py);
+      var dx = st.px - sx0, dy = st.py - sy0;
+      if (E.swipe && Math.max(Math.abs(dx), Math.abs(dy)) > 28) E.swipe(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"), dx, dy);
+    });
+    /* пауза: кнопкой и автоматически, когда вкладку или Telegram сворачивают */
+    run.pause = function (v) { run.paused = v; $("mgpause").textContent = v ? "Продолжить" : "Пауза"; };
+    on(document, "visibilitychange", function () { if (document.hidden) run.pause(true); });
+    on($("mgpause"), "click", function () { run.pause(!run.paused); });
+    $("mgpause").hidden = false; run.pause(false);
     on(cv, "contextmenu", function (e) { e.preventDefault(); });
     on(document, "keydown", function (e) { if (pre <= 0 && !endT && E.key) E.key(e.code, true, e); });
     on(document, "keyup", function (e) { if (E.key) E.key(e.code, false, e); });
@@ -4040,6 +4527,11 @@ if (/tgWebApp/.test(location.hash) || (function () { try { return !!sessionStora
     function frame(now) {
       if (!run.alive) return;
       var dt = Math.min(.05, (now - last) / 1000); last = now;
+      if (run.paused) {
+        ctx.fillStyle = "rgba(0,0,0,.04)"; ctx.fillRect(0, 0, MW, MH);
+        ctx.fillStyle = "rgba(0,0,0,.7)"; rrect(ctx, MW / 2 - 110, MH / 2 - 34, 220, 60, 12); ctx.fill(); text(ctx, "Пауза", MW / 2, MH / 2 + 8, 28, "#fff");
+        run.raf = requestAnimationFrame(frame); return;
+      }
       if (pre > 0) pre -= dt;
       else if (!endT) {
         st.t += dt; E.update(dt);
@@ -4074,6 +4566,7 @@ if (/tgWebApp/.test(location.hash) || (function () { try { return !!sessionStora
   function finishMini(g, f, label, val) {
     var reward = Math.round(mgBase(g) * f * (val || 1));
     earn(reward); S.played++; S.cd[g.n] = Date.now() + 180000;
+    if (g.mg) { S.mgs = S.mgs || {}; var ms = S.mgs[g.mg.id] || (S.mgs[g.mg.id] = { best: 0, plays: 0 }); ms.plays++; if (f > ms.best) ms.best = Math.round(f * 100) / 100; }
     S.play[g.n] = (S.play[g.n] || 0) + 30;
     var prev = S.best[g.n], rec = !prev || f > prev.f;
     if (rec) S.best[g.n] = { f: f, s: label };
@@ -4319,7 +4812,7 @@ if (/tgWebApp/.test(location.hash) || (function () { try { return !!sessionStora
         '<div class="sc-prev">' + top.slice(0, 4).map(function (i) { return simg(SK[i]); }).join("") + "</div>" +
         '<div class="oddsbar" title="Шансы по редкости">' + [1, 2, 3, 4, 5].map(function (t) { return '<i style="flex:' + SODDS[t] + ";background:" + SR[t].c + '"></i>'; }).join("") + "</div>" +
         '<details class="inside"><summary>Что внутри</summary><ul>' + top.map(function (i) { var s = SK[i]; return '<li style="--rc:' + SR[s.t].c + '"><i></i><span>' + esc(s.n) + "</span><em>" + fmt(price(i)) + "</em></li>"; }).join("") + "</ul>" +
-        '<div class="odds">' + [1, 2, 3, 4, 5].map(function (t) { return '<span style="color:' + SR[t].c + '">' + (sg.tn || TN)[t] + " " + String(SODDS[t]).replace(".", ",") + "%</span>"; }).join("") + "</div></details>" +
+        "</details>" + '<details class="inside"><summary>Шансы</summary><ul class="chl">' + [1, 2, 3, 4, 5].map(function (t) { var n = sc.ids.filter(function (i) { return SK[i].t === t; }).length; return '<li style="--rc:' + SR[t].c + '"><i></i><span>' + (sg.tn || TN)[t] + " · скинов: " + n + "</span><em>" + String(SODDS[t]).replace(".", ",") + "%</em></li>"; }).join("") + "</ul></details>" +
         '<div class="slot"><div class="buyrow"><span class="pr"><span>' + fmt(sc.p) + '</span></span><button class="b b-green" data-open="' + sc.id + '" data-cost="' + sc.p + '" data-gk="' + sg.k + '">Открыть</button></div></div></div></article>';
     }).join("") + "</div>";
   }
@@ -4698,6 +5191,10 @@ if (/tgWebApp/.test(location.hash) || (function () { try { return !!sessionStora
     $("ppcsub").textContent = "Уровень " + lvl + " · бонус +" + pct(globalMult()) + "%";
     $("ev").textContent = Math.floor(S.energy) + " / " + eMax() + " · +" + num1(eRegen()) + "/с";
     $("ebar").style.width = (S.energy / eMax() * 100) + "%";
+    var eLeft = (eMax() - S.energy) / eRegen();
+    $("etopV").textContent = Math.floor(S.energy) + "/" + eMax();
+    $("etopB").style.width = clamp(S.energy / eMax() * 100, 0, 100) + "%";
+    $("etopT").textContent = eLeft > .5 ? "полная через " + mmss(eLeft) : "полная";
     $("ering").style.strokeDashoffset = (351.86 * (1 - clamp(S.energy / eMax(), 0, 1))).toFixed(1);
     $("farm").classList.toggle("tired", S.energy < 1);
     $("combobar").style.width = comboN + "%";
@@ -4854,14 +5351,36 @@ if (/tgWebApp/.test(location.hash) || (function () { try { return !!sessionStora
   }
   $("pg-store").addEventListener("click", function (e) { var b = e.target.closest("[data-buyg]"); if (b && !b.disabled) buyGame(GAMES[+b.dataset.buyg]); });
   /* ---------- промокоды: каждый срабатывает один раз ---------- */
-  /* награда: m:сумма · c:номер кейса:сколько игр · s:игра:редкость скина · u:улучшение */
-  var PROMO = {
-    STEAMGAME: "m:1000000", START500: "m:500", GRIND1K: "m:1000", COFFEE2K: "m:2000", LUCKY5K: "m:5000", PIXEL7777: "m:7777", GAMER10K: "m:10000", FRIDAY13: "m:13000", WEEKEND25K: "m:25000", NIGHT33K: "m:33333",
-    BONUS50K: "m:50000", TRADER100K: "m:100000", SALE250K: "m:250000", RICH500K: "m:500000", BOSS2M: "m:2000000", WHALE5M: "m:5000000", MAGNAT10M: "m:10000000", JACKPOT25M: "m:25000000", LEGEND50M: "m:50000000", GABEN100M: "m:100000000",
-    SHOOTER3: "c:0:3", CASEPACK5: "c:0:5", SURVIVE3: "c:1:3", FREEDROP: "c:1:1", ACTION2: "c:2:2", INDIE2: "c:3:2", HORROR2: "c:4:2", RPGDROP: "c:5:1", STRATEGY1: "c:6:1", MYTHIC1: "c:7:1",
-    AWPSKIN: "s:cs2:4", KNIFE: "s:cs2:5", CS2PINK: "s:cs2:3", TF2HAT: "s:tf2:4", AUSTRALIUM: "s:tf2:5", PUBGDROP: "s:pubg:4", CHICKENDINNER: "s:pubg:5", RUSTDOOR: "s:rust:4", DOTA2GIFT: "s:dota:3", ARCANA: "s:dota:5",
-    PADPRO: "u:pad", PADPRO2: "u:pad", ENERGY: "u:stam", ENERGY2: "u:stam", REDBULL: "u:regen", REDBULL2: "u:regen", MONITOR: "u:slots", MONITOR2: "u:slots", BROKER: "u:market", BROKER2: "u:market"
-  };
+  /* промокоды хранятся не текстом: ключ таблицы — хеш кода, награда зашифрована самим кодом.
+     Формат награды после расшифровки: m:сумма · c:номер кейса:сколько игр · s:игра:редкость скина · u:улучшение */
+  function sha256(m) {
+    var K = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
+    var H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19], bl = m.length * 8, i, t;
+    m = m.slice(); m.push(0x80); while (m.length % 64 !== 56) m.push(0);
+    m.push(0, 0, 0, 0, (bl >>> 24) & 255, (bl >>> 16) & 255, (bl >>> 8) & 255, bl & 255);
+    function rr(x, n) { return (x >>> n) | (x << (32 - n)); }
+    for (i = 0; i < m.length; i += 64) {
+      var w = [], a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+      for (t = 0; t < 64; t++) {
+        if (t < 16) w[t] = (m[i + t * 4] << 24) | (m[i + t * 4 + 1] << 16) | (m[i + t * 4 + 2] << 8) | m[i + t * 4 + 3];
+        else { var x = w[t - 15], y = w[t - 2]; w[t] = (w[t - 16] + (rr(x, 7) ^ rr(x, 18) ^ (x >>> 3)) + w[t - 7] + (rr(y, 17) ^ rr(y, 19) ^ (y >>> 10))) | 0; }
+        var t1 = (h + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & f) ^ (~e & g)) + K[t] + w[t]) | 0, t2 = ((rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+        h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+      }
+      H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0; H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+    }
+    var o = []; for (i = 0; i < 8; i++) o.push((H[i] >>> 24) & 255, (H[i] >>> 16) & 255, (H[i] >>> 8) & 255, H[i] & 255);
+    return o;
+  }
+  function promoHash(s) { var b = [], i; for (i = 0; i < s.length; i++) b.push(s.charCodeAt(i) & 255); var h = sha256(b); for (i = 0; i < 2000; i++) h = sha256(h); return h; }
+  function promoId(code) { return promoHash("lg-id:" + code).slice(0, 12).map(function (v) { return ("0" + v.toString(16)).slice(-2); }).join(""); }
+  function promoOpen(code) {
+    var enc = PROMO[promoId(code)]; if (!enc) return "";
+    var k = promoHash("lg-key:" + code), s = "";
+    for (var i = 0; i < enc.length; i += 2) s += String.fromCharCode(parseInt(enc.substr(i, 2), 16) ^ k[i / 2]);
+    return /^[mcsu]:[a-z0-9:]+$/.test(s) ? s : "";
+  }
+  var PROMO = {"020ea690723c26b8d902a675":"e996a8a415","04675d177de8f4b2c07b6aaa":"413ef44a05","0973337dc6a3a5f87799b9c2":"4d138da73eebfa","1324ad706015fa427cf80294":"db4986bf4fafbbf8","171b0afc6574642e98a08f6e":"c5c320b8fd39f3","20ec7aead5437f18f86f2512":"aedd9ab97bd238","22b1c0ec400205e377645753":"6b74a93101dfb7fa9e","24cfde3bd60774551dfc6cf9":"19a3e9b033","25c3955f2014f5e8323e3271":"7b2dd7ab90dae4","26df4dec7cd6f9a404bc251d":"5742b8eab7e2db","28d8d718bb189cbc96819cba":"a0d54b343a6e437245ec92","2d65bf1a8610930428f2aec7":"49868593bc94","33f376be6ffca50f7ec2a3d4":"41e35336615e0360","34b19140142478818288f287":"878b50eee273f0c724db","3ae607b885b3cdd45e1585ea":"7c2237c41fc325","3f611e404c229133c54c663a":"e0143e333814bb","4bd8d0408115986000eba186":"8185299ba7ddc3d08c6d","52408a59382b1e33614855af":"7139956c4f","5d5022671f03e7586715f590":"0221431e09397814","6ef54805da5f47c67599115c":"8f369877ad2399e4","70e93b0c1fb2d6c09f60b37e":"e392b92f3496","726e9c7ae4a689242e1a6f31":"6dd5b4920208","7d8e5f1500f78a0d0fdc5592":"ec9d78abfe3d8a4471","8500b1dd450bf59676b35c29":"abb06791b67ac2","856aee2297bd52f51b407daf":"620829187e5269d3","861b616b03acf94e13054c42":"0af4b693f9","8be8d2477393dc67a4a57438":"83086fefcb","8d33df4bb23081d0c7728c98":"80d6ef3843520a","9828d7aded9f73bab853cd87":"b8e048dc3b0610","9a34c6f5d5df492fc0b0c8f3":"8ded055214ada62f","9d7b8e7d245b8ca6227aad9c":"a57c7032c635c5","9e5023c8e22026b67b4ad764":"f46f9ecb3f","a55c628b619c0c22d9465f8b":"b5b121b9e5","b431f70ea4ce0962d56d5635":"9b889ed64d22334a71","b94a66cd6417f6ade6826767":"83554429650123","b977654bf40caa52ab39bcd3":"6e7c942cc9889c","bbde66ebf5cb6f87df8b1136":"9fe590d98dcdbdf9","bc9cb79c9fc7aeb6f93f5978":"2bb76a5940","bebc7c02b095c18f5735e09c":"eec1cfdd2f","c995e657b363a81c78cd9ace":"d4fc297c8975","d59ccf53fa4015eee6d597fb":"ab760ecc524f","d63f9e0cdf4dcbfc8f9aa533":"063e034b9d3293ab","da4edbc64661f7202e1ed3ef":"2aedf9ba46203e","e3889630ac6fb6a1282a7367":"448df697f0","e44c50ae8c0285d0e7ab9bad":"4018443404","eaf0f1cb2c9398e68681cd23":"35d2cd79cc","f3041d59a4904de16b283543":"ce0087d2b9561b11","f36e835e1087ea242174c25c":"e30b6e21f93c","f43d5bf3488f7984361c3082":"a98358296d312211f39a","fba72d6c6968ed4d63484aa8":"6584025a3473b420"};
   function promoGive(r) {
     var p = r.split(":");
     if (p[0] === "m") { S.tokens += +p[1]; return "+" + fmt(+p[1]) + " на кошелёк"; }
@@ -4889,9 +5408,13 @@ if (/tgWebApp/.test(location.hash) || (function () { try { return !!sessionStora
     m.classList.remove("err");
     if (!S.promo) S.promo = [];
     if (!code) return;
-    if (!Object.prototype.hasOwnProperty.call(PROMO, code)) { m.textContent = "Такого промокода нет."; m.classList.add("err"); return; }
-    if (S.promo.indexOf(code) >= 0) { m.textContent = "Этот промокод уже использован."; m.classList.add("err"); return; }
-    S.promo.push(code); var what = promoGive(PROMO[code]);
+    if (!/^[A-Z0-9]{3,24}$/.test(code)) { m.textContent = "Такого промокода нет."; m.classList.add("err"); return; }
+    var pid = promoId(code), reward = promoOpen(code);
+    if (!reward) { m.textContent = "Такого промокода нет."; m.classList.add("err"); return; }
+    /* в сохранении тоже лежат только хеши; старые записи открытым текстом переводим в хеши */
+    S.promo = S.promo.map(function (c) { return /^[0-9a-f]{24}$/.test(c) ? c : promoId(String(c)); });
+    if (S.promo.indexOf(pid) >= 0) { m.textContent = "Этот промокод уже использован."; m.classList.add("err"); return; }
+    S.promo.push(pid); var what = promoGive(reward);
     $("promoIn").value = ""; $("promoForm").hidden = true;
     m.textContent = "Промокод принят: " + what;
     fanfare(4); toast("Промокод активирован", what, "coin"); checkAch(); renderCaseLists(); renderBg(); renderPf(); renderCoin(); if (page === "fx") renderUpgs();
